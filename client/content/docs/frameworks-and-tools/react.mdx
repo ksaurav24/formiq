@@ -1,0 +1,523 @@
+---
+title: React Integration
+description: FormIQ provides a custom React hook `useFormiq` for easy form handling with built-in loading states and error management.
+
+---
+
+import { Tabs, Tab } from 'fumadocs-ui/components/tabs';
+import { Callout } from 'fumadocs-ui/components/callout';
+import { Card, Cards } from 'fumadocs-ui/components/card';
+import { DynamicCodeBlock } from 'fumadocs-ui/components/dynamic-codeblock';
+ 
+## Installation
+
+```npm
+npm install formiq-sdk
+```
+
+<Callout type="info">
+React 17.0.0 or higher is required to use the `useFormiq` hook.
+</Callout>
+
+---
+
+## useFormiq Hook
+
+### Import
+
+
+```ts lineNumbers
+import { useFormiq } from 'formiq-sdk/react';
+import Formiq from 'formiq-sdk';
+```
+
+### API
+
+```ts lineNumbers
+const { submit, loading, error } = useFormiq(formiq);
+```
+
+**Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `formiq` | `Formiq` | Yes | FormIQ client instance |
+
+**Returns:**
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `submit` | `(data: Record<string, any>, options?: SubmitOptions) => Promise<FormiqResponse \| null>` | Async function to submit form data |
+| `loading` | `boolean` | `true` when submission is in progress |
+| `error` | `FormiqError \| null` | Error object if submission fails, `null` otherwise |
+
+---
+
+## Basic Usage
+
+```tsx lineNumbers
+import { useFormiq } from 'formiq-sdk/react';
+import Formiq from 'formiq-sdk';
+import { useState } from 'react';
+
+// Initialize FormIQ client outside component
+const formiq = new Formiq(
+  process.env.REACT_APP_FORMIQ_API_KEY!,
+  process.env.REACT_APP_FORMIQ_PROJECT_ID!
+);
+
+function NewsletterForm() {
+  const { submit, loading, error } = useFormiq(formiq);
+  const [email, setEmail] = useState('');
+  const [success, setSuccess] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    const response = await submit({ email });
+    
+    if (response) {
+      setSuccess(true);
+      setEmail('');
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <input
+        type="email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        placeholder="Enter your email"
+        disabled={loading}
+        required
+      />
+      <button type="submit" disabled={loading}>
+        {loading ? 'Subscribing...' : 'Subscribe'}
+      </button>
+      
+      {error && <p className="error">{error.message}</p>}
+      {success && <p className="success">Thanks for subscribing!</p>}
+    </form>
+  );
+}
+
+export default NewsletterForm;
+```
+
+---
+
+## Complete Contact Form Example
+
+```tsx lineNumbers
+import { useFormiq } from 'formiq-sdk/react';
+import Formiq from 'formiq-sdk';
+import { useState } from 'react';
+
+const formiq = new Formiq(
+  process.env.REACT_APP_FORMIQ_API_KEY!,
+  process.env.REACT_APP_FORMIQ_PROJECT_ID!
+);
+
+function ContactForm() {
+  const { submit, loading, error } = useFormiq(formiq);
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    subject: '',
+    message: ''
+  });
+  const [success, setSuccess] = useState(false);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSuccess(false);
+    
+    const response = await submit(formData, {
+      userAgent: navigator.userAgent,
+      origin: window.location.origin
+    });
+    
+    if (response) {
+      setSuccess(true);
+      setFormData({ name: '', email: '', subject: '', message: '' });
+      
+      // Auto-hide success message after 5 seconds
+      setTimeout(() => setSuccess(false), 5000);
+    }
+  };
+
+  return (
+    <div className="contact-form">
+      <h2>Contact Us</h2>
+      
+      <form onSubmit={handleSubmit}>
+        <div className="form-group">
+          <label htmlFor="name">Name</label>
+          <input
+            id="name"
+            name="name"
+            type="text"
+            value={formData.name}
+            onChange={handleChange}
+            disabled={loading}
+            required
+          />
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="email">Email</label>
+          <input
+            id="email"
+            name="email"
+            type="email"
+            value={formData.email}
+            onChange={handleChange}
+            disabled={loading}
+            required
+          />
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="subject">Subject</label>
+          <input
+            id="subject"
+            name="subject"
+            type="text"
+            value={formData.subject}
+            onChange={handleChange}
+            disabled={loading}
+            required
+          />
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="message">Message</label>
+          <textarea
+            id="message"
+            name="message"
+            rows={5}
+            value={formData.message}
+            onChange={handleChange}
+            disabled={loading}
+            required
+          />
+        </div>
+
+        <button type="submit" disabled={loading}>
+          {loading ? 'Sending...' : 'Send Message'}
+        </button>
+
+        {error && (
+          <div className="alert alert-error">
+            <strong>Error:</strong> {error.message}
+          </div>
+        )}
+
+        {success && (
+          <div className="alert alert-success">
+            <strong>Success!</strong> Your message has been sent.
+          </div>
+        )}
+      </form>
+    </div>
+  );
+}
+
+export default ContactForm;
+```
+
+---
+
+## With Options
+
+Pass additional metadata like IP address, user agent, and origin:
+
+```ts lineNumbers
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  
+  const response = await submit(
+    formData,
+    {
+      ipAddress: '192.168.1.1', // From your backend
+      userAgent: navigator.userAgent,
+      origin: window.location.origin
+    }
+  );
+  
+  if (response) {
+    console.log('Submitted at:', response.data.createdAt);
+  }
+};
+```
+
+---
+
+## Integration with React Hook Form
+
+```tsx lineNumbers
+import { useFormiq } from 'formiq-sdk/react';
+import Formiq from 'formiq-sdk';
+import { useForm } from 'react-hook-form';
+
+const formiq = new Formiq('API_KEY', 'PROJECT_ID');
+
+function AdvancedForm() {
+  const { submit, loading, error } = useFormiq(formiq);
+  const { register, handleSubmit, reset, formState: { errors } } = useForm();
+
+  const onSubmit = async (data: any) => {
+    const response = await submit(data);
+    
+    if (response) {
+      reset();
+      alert('Form submitted successfully!');
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit(onSubmit)}>
+      <input 
+        {...register('name', { required: 'Name is required' })} 
+        placeholder="Name"
+        disabled={loading}
+      />
+      {errors.name && <span>{errors.name.message}</span>}
+
+      <input 
+        {...register('email', { 
+          required: 'Email is required',
+          pattern: {
+            value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+            message: 'Invalid email address'
+          }
+        })} 
+        placeholder="Email"
+        disabled={loading}
+      />
+      {errors.email && <span>{errors.email.message}</span>}
+
+      <button type="submit" disabled={loading}>
+        {loading ? 'Submitting...' : 'Submit'}
+      </button>
+
+      {error && <p className="error">{error.message}</p>}
+    </form>
+  );
+}
+```
+
+---
+
+## Multi-Step Form
+
+```tsx lineNumbers
+import { useFormiq } from 'formiq-sdk/react';
+import Formiq from 'formiq-sdk';
+import { useState } from 'react';
+
+const formiq = new Formiq('API_KEY', 'PROJECT_ID');
+
+function MultiStepForm() {
+  const { submit, loading, error } = useFormiq(formiq);
+  const [step, setStep] = useState(1);
+  const [formData, setFormData] = useState({
+    // Step 1
+    firstName: '',
+    lastName: '',
+    email: '',
+    // Step 2
+    company: '',
+    role: '',
+    // Step 3
+    interests: []
+  });
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const nextStep = () => setStep(step + 1);
+  const prevStep = () => setStep(step - 1);
+
+  const handleFinalSubmit = async () => {
+    const response = await submit(formData);
+    
+    if (response) {
+      alert('Registration complete!');
+      // Reset or redirect
+    }
+  };
+
+  return (
+    <div>
+      {step === 1 && (
+        <div>
+          <h3>Step 1: Personal Information</h3>
+          <input name="firstName" value={formData.firstName} onChange={handleChange} />
+          <input name="lastName" value={formData.lastName} onChange={handleChange} />
+          <input name="email" type="email" value={formData.email} onChange={handleChange} />
+          <button onClick={nextStep}>Next</button>
+        </div>
+      )}
+
+      {step === 2 && (
+        <div>
+          <h3>Step 2: Professional Details</h3>
+          <input name="company" value={formData.company} onChange={handleChange} />
+          <input name="role" value={formData.role} onChange={handleChange} />
+          <button onClick={prevStep}>Back</button>
+          <button onClick={nextStep}>Next</button>
+        </div>
+      )}
+
+      {step === 3 && (
+        <div>
+          <h3>Step 3: Review & Submit</h3>
+          <pre>{JSON.stringify(formData, null, 2)}</pre>
+          <button onClick={prevStep} disabled={loading}>Back</button>
+          <button onClick={handleFinalSubmit} disabled={loading}>
+            {loading ? 'Submitting...' : 'Submit'}
+          </button>
+        </div>
+      )}
+
+      {error && <p className="error">{error.message}</p>}
+    </div>
+  );
+}
+```
+
+---
+
+## TypeScript Support
+
+Full TypeScript support with type inference:
+
+```tsx lineNumbers
+import { useFormiq } from 'formiq-sdk/react';
+import Formiq from 'formiq-sdk';
+import type { FormiqResponse, SubmitOptions } from 'formiq-sdk';
+
+const formiq = new Formiq('API_KEY', 'PROJECT_ID');
+
+interface ContactFormData {
+  name: string;
+  email: string;
+  message: string;
+}
+
+function TypedContactForm() {
+  const { submit, loading, error } = useFormiq(formiq);
+  const [formData, setFormData] = useState<ContactFormData>({
+    name: '',
+    email: '',
+    message: ''
+  });
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    
+    const options: SubmitOptions = {
+      userAgent: navigator.userAgent,
+      origin: window.location.origin
+    };
+    
+    const response: FormiqResponse | null = await submit(formData, options);
+    
+    if (response) {
+      console.log('Submitted fields:', response.data.fields);
+      console.log('Created at:', response.data.createdAt);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      {/* Form fields */}
+    </form>
+  );
+}
+```
+
+---
+
+## Best Practices
+
+### Initialize Client Outside Component
+
+```ts lineNumbers
+// ✅ Good - Client created once
+const formiq = new Formiq('API_KEY', 'PROJECT_ID');
+
+function MyForm() {
+  const { submit, loading, error } = useFormiq(formiq);
+  // ...
+}
+```
+
+```ts lineNumbers
+// ❌ Bad - Client recreated on every render
+function MyForm() {
+  const formiq = new Formiq('API_KEY', 'PROJECT_ID'); // Don't do this
+  const { submit, loading, error } = useFormiq(formiq);
+  // ...
+}
+```
+
+### Use Environment Variables
+
+```ts lineNumbers
+// .env.local
+// REACT_APP_FORMIQ_API_KEY=your_key
+// REACT_APP_FORMIQ_PROJECT_ID=your_project
+
+const formiq = new Formiq(
+  process.env.REACT_APP_FORMIQ_API_KEY!,
+  process.env.REACT_APP_FORMIQ_PROJECT_ID!
+);
+```
+
+### Handle Loading States
+
+```tsx lineNumbers
+<button type="submit" disabled={loading}>
+  {loading ? 'Submitting...' : 'Submit'}
+</button>
+
+<input disabled={loading} />
+```
+
+### Display Errors
+
+```tsx lineNumbers
+{error && (
+  <div className="error-message">
+    {error.message}
+  </div>
+)}
+```
+
+---
+
+## Next Steps
+
+<Cards>
+  <Card 
+    title="React-hook-form Integration" 
+    href="/docs/frameworks-and-tools/with-react-hook-form"
+    description="Use FormIQ with Next.js App Router and Server Actions"
+  /> 
+  <Card 
+    title="Core API" 
+    href="/docs/core/api-reference"
+    description="Core FormIQ API reference"
+  />
+</Cards> 

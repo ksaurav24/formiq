@@ -1,0 +1,10 @@
+// @ts-nocheck -- skip type checking
+import * as docs_5 from "../content/docs/frameworks-and-tools/with-react-hook-form.mdx?collection=docs&hash=1760761068925"
+import * as docs_4 from "../content/docs/frameworks-and-tools/react.mdx?collection=docs&hash=1760761068925"
+import * as docs_3 from "../content/docs/core/api-reference.mdx?collection=docs&hash=1760761068925"
+import * as docs_2 from "../content/docs/error-handling/error-handling.mdx?collection=docs&hash=1760761068925"
+import * as docs_1 from "../content/docs/installation.mdx?collection=docs&hash=1760761068925"
+import * as docs_0 from "../content/docs/index.mdx?collection=docs&hash=1760761068925"
+import { _runtime } from "fumadocs-mdx/runtime/next"
+import * as _source from "../source.config"
+export const docs = _runtime.docs<typeof _source.docs>([{ info: {"path":"index.mdx","fullPath":"content\\docs\\index.mdx"}, data: docs_0 }, { info: {"path":"installation.mdx","fullPath":"content\\docs\\installation.mdx"}, data: docs_1 }, { info: {"path":"error-handling/error-handling.mdx","fullPath":"content\\docs\\error-handling\\error-handling.mdx"}, data: docs_2 }, { info: {"path":"core/api-reference.mdx","fullPath":"content\\docs\\core\\api-reference.mdx"}, data: docs_3 }, { info: {"path":"frameworks-and-tools/react.mdx","fullPath":"content\\docs\\frameworks-and-tools\\react.mdx"}, data: docs_4 }, { info: {"path":"frameworks-and-tools/with-react-hook-form.mdx","fullPath":"content\\docs\\frameworks-and-tools\\with-react-hook-form.mdx"}, data: docs_5 }], [{"info":{"path":"core/meta.json","fullPath":"content\\docs\\core\\meta.json"},"data":{"title":"API Reference","root":false}}, {"info":{"path":"error-handling/meta.json","fullPath":"content\\docs\\error-handling\\meta.json"},"data":{"title":"Error Handling with Formiq","description":"Learn about how to Handle error while using formiq in your app","root":false}}, {"info":{"path":"frameworks-and-tools/meta.json","fullPath":"content\\docs\\frameworks-and-tools\\meta.json"},"data":{"title":"Frameworks and Tools","description":"Learn about how to integrate formiq with existing frameworks and tools","root":false}}])

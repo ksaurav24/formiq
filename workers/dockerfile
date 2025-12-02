@@ -1,0 +1,30 @@
+# syntax=docker/dockerfile:1
+
+# -----------------------------
+# Stage 1: Builder
+# -----------------------------
+FROM oven/bun:1.2.22 AS builder
+WORKDIR /app
+
+COPY package.json bun.lock tsconfig.json ./
+RUN bun install --frozen-lockfile
+
+# Copy source folder
+COPY src ./src
+RUN bun run build  # produces dist/index.js
+
+# -----------------------------
+# Stage 2: Production
+# -----------------------------
+FROM oven/bun:1.2.22 AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+ 
+
+# Copy artifacts
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/package.json ./ 
+ 
+
+CMD ["node", "dist/index.js"]

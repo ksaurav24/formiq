@@ -1,0 +1,670 @@
+---
+title: React Hook Form Integration
+description: Use FormIQ SDK with React Hook Form for powerful form validation and management
+---
+
+import { Tabs, Tab } from 'fumadocs-ui/components/tabs';
+import { Callout } from 'fumadocs-ui/components/callout';
+import { Card, Cards } from 'fumadocs-ui/components/card';
+
+# React Hook Form Integration
+
+Combine FormIQ with React Hook Form for powerful form validation, error handling, and state management.
+
+## Installation
+
+```npm
+npm install formiq-sdk react-hook-form
+```
+---
+
+## Basic Integration
+
+```tsx lineNumbers
+import { useFormiq } from 'formiq-sdk/react';
+import Formiq from 'formiq-sdk';
+import { useForm } from 'react-hook-form';
+
+const formiq = new Formiq(
+  process.env.REACT_APP_FORMIQ_API_KEY!,
+  process.env.REACT_APP_FORMIQ_PROJECT_ID!
+);
+
+function ContactForm() {
+  const { submit, loading, error } = useFormiq(formiq);
+  const { register, handleSubmit, reset, formState: { errors } } = useForm();
+
+  const onSubmit = async (data: any) => {
+    const response = await submit(data);
+    
+    if (response) {
+      reset(); // Clear form after successful submission
+      alert('Form submitted successfully!');
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit(onSubmit)}>
+      <div>
+        <input 
+          {...register('name', { required: 'Name is required' })} 
+          placeholder="Your Name"
+          disabled={loading}
+        />
+        {errors.name && <span className="error">{errors.name.message}</span>}
+      </div>
+
+      <div>
+        <input 
+          {...register('email', { 
+            required: 'Email is required',
+            pattern: {
+              value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+              message: 'Invalid email address'
+            }
+          })} 
+          placeholder="Your Email"
+          disabled={loading}
+        />
+        {errors.email && <span className="error">{errors.email.message}</span>}
+      </div>
+
+      <button type="submit" disabled={loading}>
+        {loading ? 'Submitting...' : 'Submit'}
+      </button>
+
+      {error && <div className="error">Submission failed: {error.message}</div>}
+    </form>
+  );
+}
+
+export default ContactForm;
+```
+
+---
+
+## With Advanced Validation
+
+```tsx lineNumbers
+import { useFormiq } from 'formiq-sdk/react';
+import Formiq from 'formiq-sdk';
+import { useForm } from 'react-hook-form';
+
+const formiq = new Formiq('API_KEY', 'PROJECT_ID');
+
+interface FormData {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  message: string;
+  agreeToTerms: boolean;
+}
+
+function AdvancedContactForm() {
+  const { submit, loading, error } = useFormiq(formiq);
+  const { 
+    register, 
+    handleSubmit, 
+    reset,
+    formState: { errors, isValid } 
+  } = useForm<FormData>({
+    mode: 'onChange' // Validate on change
+  });
+
+  const onSubmit = async (data: FormData) => {
+    const response = await submit(data, {
+      userAgent: navigator.userAgent,
+      origin: window.location.origin
+    });
+    
+    if (response) {
+      console.log('Submission ID:', response.data.createdAt);
+      reset();
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit(onSubmit)}>
+      <div className="form-row">
+        <div className="form-group">
+          <label htmlFor="firstName">First Name *</label>
+          <input
+            id="firstName"
+            {...register('firstName', { 
+              required: 'First name is required',
+              minLength: {
+                value: 2,
+                message: 'First name must be at least 2 characters'
+              }
+            })}
+            disabled={loading}
+          />
+          {errors.firstName && (
+            <span className="error">{errors.firstName.message}</span>
+          )}
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="lastName">Last Name *</label>
+          <input
+            id="lastName"
+            {...register('lastName', { 
+              required: 'Last name is required',
+              minLength: {
+                value: 2,
+                message: 'Last name must be at least 2 characters'
+              }
+            })}
+            disabled={loading}
+          />
+          {errors.lastName && (
+            <span className="error">{errors.lastName.message}</span>
+          )}
+        </div>
+      </div>
+
+      <div className="form-group">
+        <label htmlFor="email">Email *</label>
+        <input
+          id="email"
+          type="email"
+          {...register('email', { 
+            required: 'Email is required',
+            pattern: {
+              value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+              message: 'Invalid email address'
+            }
+          })}
+          disabled={loading}
+        />
+        {errors.email && (
+          <span className="error">{errors.email.message}</span>
+        )}
+      </div>
+
+      <div className="form-group">
+        <label htmlFor="phone">Phone</label>
+        <input
+          id="phone"
+          {...register('phone', {
+            pattern: {
+              value: /^[+]?[(]?[0-9]{3}[)]?[-\s.]?[0-9]{3}[-\s.]?[0-9]{4,6}$/,
+              message: 'Invalid phone number'
+            }
+          })}
+          placeholder="+1 (555) 123-4567"
+          disabled={loading}
+        />
+        {errors.phone && (
+          <span className="error">{errors.phone.message}</span>
+        )}
+      </div>
+
+      <div className="form-group">
+        <label htmlFor="message">Message *</label>
+        <textarea
+          id="message"
+          rows={5}
+          {...register('message', { 
+            required: 'Message is required',
+            minLength: {
+              value: 10,
+              message: 'Message must be at least 10 characters'
+            },
+            maxLength: {
+              value: 500,
+              message: 'Message must not exceed 500 characters'
+            }
+          })}
+          disabled={loading}
+        />
+        {errors.message && (
+          <span className="error">{errors.message.message}</span>
+        )}
+      </div>
+
+      <div className="form-group">
+        <label className="checkbox-label">
+          <input
+            type="checkbox"
+            {...register('agreeToTerms', { 
+              required: 'You must agree to the terms'
+            })}
+            disabled={loading}
+          />
+          I agree to the terms and conditions *
+        </label>
+        {errors.agreeToTerms && (
+          <span className="error">{errors.agreeToTerms.message}</span>
+        )}
+      </div>
+
+      <button 
+        type="submit" 
+        disabled={loading || !isValid}
+        className="submit-btn"
+      >
+        {loading ? 'Sending...' : 'Send Message'}
+      </button>
+
+      {error && (
+        <div className="alert alert-error">
+          <strong>Error:</strong> {error.message}
+        </div>
+      )}
+    </form>
+  );
+}
+
+export default AdvancedContactForm;
+```
+
+---
+
+## With Success Feedback
+
+```tsx lineNumbers
+import { useFormiq } from 'formiq-sdk/react';
+import Formiq from 'formiq-sdk';
+import { useForm } from 'react-hook-form';
+import { useState } from 'react';
+
+const formiq = new Formiq('API_KEY', 'PROJECT_ID');
+
+function FeedbackForm() {
+  const { submit, loading, error } = useFormiq(formiq);
+  const { register, handleSubmit, reset, formState: { errors } } = useForm();
+  const [success, setSuccess] = useState(false);
+  const [submissionId, setSubmissionId] = useState<string>('');
+
+  const onSubmit = async (data: any) => {
+    setSuccess(false);
+    
+    const response = await submit(data);
+    
+    if (response) {
+      setSuccess(true);
+      setSubmissionId(response.data.createdAt);
+      reset();
+      
+      // Hide success message after 5 seconds
+      setTimeout(() => setSuccess(false), 5000);
+    }
+  };
+
+  return (
+    <div className="feedback-form">
+      <h2>Send Feedback</h2>
+      
+      {success ? (
+        <div className="alert alert-success">
+          <h3>✓ Thank you for your feedback!</h3>
+          <p>Submission ID: {submissionId}</p>
+          <button onClick={() => setSuccess(false)}>Send Another</button>
+        </div>
+      ) : (
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <div className="form-group">
+            <label htmlFor="name">Name</label>
+            <input
+              id="name"
+              {...register('name', { required: 'Name is required' })}
+              disabled={loading}
+            />
+            {errors.name && <span className="error">{errors.name.message}</span>}
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="email">Email</label>
+            <input
+              id="email"
+              type="email"
+              {...register('email', { 
+                required: 'Email is required',
+                pattern: {
+                  value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                  message: 'Invalid email'
+                }
+              })}
+              disabled={loading}
+            />
+            {errors.email && <span className="error">{errors.email.message}</span>}
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="rating">Rating</label>
+            <select
+              id="rating"
+              {...register('rating', { required: 'Please select a rating' })}
+              disabled={loading}
+            >
+              <option value="">Select...</option>
+              <option value="5">⭐⭐⭐⭐⭐ Excellent</option>
+              <option value="4">⭐⭐⭐⭐ Good</option>
+              <option value="3">⭐⭐⭐ Average</option>
+              <option value="2">⭐⭐ Poor</option>
+              <option value="1">⭐ Very Poor</option>
+            </select>
+            {errors.rating && <span className="error">{errors.rating.message}</span>}
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="feedback">Feedback</label>
+            <textarea
+              id="feedback"
+              rows={4}
+              {...register('feedback', { 
+                required: 'Feedback is required',
+                minLength: {
+                  value: 10,
+                  message: 'Please provide at least 10 characters'
+                }
+              })}
+              disabled={loading}
+            />
+            {errors.feedback && <span className="error">{errors.feedback.message}</span>}
+          </div>
+
+          <button type="submit" disabled={loading}>
+            {loading ? 'Submitting...' : 'Submit Feedback'}
+          </button>
+
+          {error && (
+            <div className="alert alert-error">
+              {error.message}
+            </div>
+          )}
+        </form>
+      )}
+    </div>
+  );
+}
+
+export default FeedbackForm;
+```
+
+---
+
+## Custom Validation Rules
+
+```tsx lineNumbers
+import { useFormiq } from 'formiq-sdk/react';
+import Formiq from 'formiq-sdk';
+import { useForm } from 'react-hook-form';
+
+const formiq = new Formiq('API_KEY', 'PROJECT_ID');
+
+function RegistrationForm() {
+  const { submit, loading, error } = useFormiq(formiq);
+  const { 
+    register, 
+    handleSubmit, 
+    watch,
+    formState: { errors } 
+  } = useForm();
+
+  const password = watch('password');
+
+  const onSubmit = async (data: any) => {
+    // Remove password confirmation before submitting
+    const { passwordConfirm, ...submitData } = data;
+    
+    const response = await submit(submitData);
+    
+    if (response) {
+      alert('Registration successful!');
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit(onSubmit)}>
+      <div className="form-group">
+        <label>Username</label>
+        <input
+          {...register('username', {
+            required: 'Username is required',
+            minLength: {
+              value: 3,
+              message: 'Username must be at least 3 characters'
+            },
+            pattern: {
+              value: /^[a-zA-Z0-9_]+$/,
+              message: 'Username can only contain letters, numbers, and underscores'
+            }
+          })}
+          disabled={loading}
+        />
+        {errors.username && <span className="error">{errors.username.message}</span>}
+      </div>
+
+      <div className="form-group">
+        <label>Email</label>
+        <input
+          type="email"
+          {...register('email', {
+            required: 'Email is required',
+            validate: {
+              validDomain: (value) => {
+                const domain = value.split('@');
+                return domain !== 'tempmail.com' || 'Temporary email addresses are not allowed';
+              }
+            }
+          })}
+          disabled={loading}
+        />
+        {errors.email && <span className="error">{errors.email.message}</span>}
+      </div>
+
+      <div className="form-group">
+        <label>Password</label>
+        <input
+          type="password"
+          {...register('password', {
+            required: 'Password is required',
+            minLength: {
+              value: 8,
+              message: 'Password must be at least 8 characters'
+            },
+            validate: {
+              hasUpperCase: (value) => 
+                /[A-Z]/.test(value) || 'Password must contain at least one uppercase letter',
+              hasLowerCase: (value) => 
+                /[a-z]/.test(value) || 'Password must contain at least one lowercase letter',
+              hasNumber: (value) => 
+                /\d/.test(value) || 'Password must contain at least one number',
+              hasSpecialChar: (value) => 
+                /[!@#$%^&*]/.test(value) || 'Password must contain at least one special character'
+            }
+          })}
+          disabled={loading}
+        />
+        {errors.password && <span className="error">{errors.password.message}</span>}
+      </div>
+
+      <div className="form-group">
+        <label>Confirm Password</label>
+        <input
+          type="password"
+          {...register('passwordConfirm', {
+            required: 'Please confirm your password',
+            validate: (value) => 
+              value === password || 'Passwords do not match'
+          })}
+          disabled={loading}
+        />
+        {errors.passwordConfirm && (
+          <span className="error">{errors.passwordConfirm.message}</span>
+        )}
+      </div>
+
+      <button type="submit" disabled={loading}>
+        {loading ? 'Registering...' : 'Register'}
+      </button>
+
+      {error && <div className="error">{error.message}</div>}
+    </form>
+  );
+}
+
+export default RegistrationForm;
+```
+
+---
+
+## TypeScript Support
+
+```tsx lineNumbers
+import { useFormiq } from 'formiq-sdk/react';
+import Formiq from 'formiq-sdk';
+import { useForm, SubmitHandler } from 'react-hook-form';
+
+const formiq = new Formiq('API_KEY', 'PROJECT_ID');
+
+interface ContactFormInputs {
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+  subscribe: boolean;
+}
+
+function TypedContactForm() {
+  const { submit, loading, error } = useFormiq(formiq);
+  const { 
+    register, 
+    handleSubmit, 
+    reset,
+    formState: { errors } 
+  } = useForm<ContactFormInputs>();
+
+  const onSubmit: SubmitHandler<ContactFormInputs> = async (data) => {
+    const response = await submit(data, {
+      userAgent: navigator.userAgent,
+      origin: window.location.origin
+    });
+    
+    if (response) {
+      console.log('Submitted at:', response.data.createdAt);
+      reset();
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit(onSubmit)}>
+      <input
+        {...register('name', { required: 'Name is required' })}
+        placeholder="Name"
+        disabled={loading}
+      />
+      {errors.name && <span>{errors.name.message}</span>}
+
+      <input
+        {...register('email', { 
+          required: 'Email is required',
+          pattern: {
+            value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+            message: 'Invalid email'
+          }
+        })}
+        type="email"
+        placeholder="Email"
+        disabled={loading}
+      />
+      {errors.email && <span>{errors.email.message}</span>}
+
+      <input
+        {...register('subject', { required: 'Subject is required' })}
+        placeholder="Subject"
+        disabled={loading}
+      />
+      {errors.subject && <span>{errors.subject.message}</span>}
+
+      <textarea
+        {...register('message', { 
+          required: 'Message is required',
+          minLength: { value: 10, message: 'Minimum 10 characters' }
+        })}
+        placeholder="Message"
+        disabled={loading}
+      />
+      {errors.message && <span>{errors.message.message}</span>}
+
+      <label>
+        <input type="checkbox" {...register('subscribe')} disabled={loading} />
+        Subscribe to newsletter
+      </label>
+
+      <button type="submit" disabled={loading}>
+        {loading ? 'Sending...' : 'Send'}
+      </button>
+
+      {error && <div className="error">{error.message}</div>}
+    </form>
+  );
+}
+
+export default TypedContactForm;
+```
+
+---
+
+## Best Practices
+
+<Callout type="info">
+**Separation of Concerns:** React Hook Form handles validation and form state, while useFormiq handles submission and API communication.
+</Callout>
+
+### 1. Reset Form After Success
+
+```tsx lineNumbers
+const onSubmit = async (data: any) => {
+  const response = await submit(data);
+  if (response) {
+    reset(); // Clear all form fields
+  }
+};
+```
+
+### 2. Disable Inputs During Submission
+
+```tsx lineNumbers
+<input {...register('email')} disabled={loading} />
+<button type="submit" disabled={loading}>Submit</button>
+```
+
+### 3. Display Both Validation and Submission Errors
+
+```tsx lineNumbers
+{/* React Hook Form validation errors */}
+{errors.email && <span>{errors.email.message}</span>}
+
+{/* FormIQ submission errors */}
+{error && <div className="error">{error.message}</div>}
+```
+
+### 4. Use Mode for Real-time Validation
+
+```tsx lineNumbers
+const { register, handleSubmit } = useForm({
+  mode: 'onChange' // Validate on every change
+  // or mode: 'onBlur' // Validate on blur
+});
+```
+
+---
+
+## Next Steps
+
+<Cards>
+  <Card 
+    title="React Integration" 
+    href="/docs/frameworks-and-tools/react"
+    description="Basic useFormiq hook documentation"
+  /> 
+  <Card 
+    title="Error Handling" 
+    href="/docs/error-handling/error-handling"
+    description="Handle errors gracefully"
+  /> 
+</Cards> 

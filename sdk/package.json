@@ -1,0 +1,76 @@
+{
+  "name": "formiq-sdk",
+  "version": "1.1.0",
+  "description": "A lightweight form submission and management SDK with optional React/Next.js helpers.",
+  "license": "MIT",
+  "author": {
+    "name": "ksaurav24",
+    "url": "https://formiq.devxsaurav.in",
+    "email": "ksaurav4093@example.com",
+    "github": "https://github.com/ksaurav24",
+    "linkedin": "https://www.linkedin.com/in/ksaurav24/"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ksaurav24/formiq.git"
+  },
+  "keywords": [
+    "form",
+    "form-submission",
+    "form-management",
+    "form-sdk",
+    "typescript",
+    "javascript",
+    "hooks",
+    "react",
+    "nextjs",
+    "frontend",
+    "formiq"
+  ],
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./react": {
+      "types": "./dist/react/index.d.ts",
+      "import": "./dist/react/index.js",
+      "require": "./dist/react/index.cjs"
+    },
+    "./next": {
+      "types": "./dist/next/index.d.ts",
+      "import": "./dist/next/index.js",
+      "require": "./dist/next/index.cjs"
+    }
+  },
+  "scripts": {
+    "build": "tsup",    
+    "dev": "tsup --watch",
+    "clean": "rm -rf dist"
+  },
+  "devDependencies": {
+    "@types/node": "^24.6.2",
+    "@types/react": "^18.3.12",
+    "next": "^15.5.4",
+    "react": "^19.2.0",
+    "tsup": "^8.5.0",
+    "typescript": "^5.9.3"
+  },
+  "peerDependencies": {
+    "react": ">=17.0.0",
+    "next": ">=12.0.0"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    },
+    "next": {
+      "optional": true
+    }
+  }
+}

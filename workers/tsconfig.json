@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "lib": ["ESNext"],
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "outDir": "dist",
+    "allowJs": true,
+    "strict": true,
+    "skipLibCheck": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+
+    // Fix default import issues
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+
+    // Optionally allow implicit any temporarily
+    "noImplicitAny": false
+  },
+  "include": ["src"]
+}

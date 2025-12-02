@@ -1,0 +1,111 @@
+version: "3.9"
+
+services:
+  nginx-proxy:
+    image: nginxproxy/nginx-proxy:alpine
+    container_name: formiq-nginx-proxy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+      - ./certs:/etc/nginx/certs:rw
+      - ./vhost.d:/etc/nginx/vhost.d
+      - ./html:/usr/share/nginx/html
+    networks:
+      - formiq-net
+
+  letsencrypt:
+    image: nginxproxy/acme-companion
+    container_name: formiq-acme
+    restart: unless-stopped
+    depends_on:
+      - nginx-proxy
+    environment:
+      - NGINX_PROXY_CONTAINER=formiq-nginx-proxy
+      - DEFAULT_EMAIL=saurav@devxsaurav.in
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./certs:/etc/nginx/certs:rw
+      - ./vhost.d:/etc/nginx/vhost.d
+      - ./html:/usr/share/nginx/html
+    networks:
+      - formiq-net
+
+  mongodb:
+    image: mongo:6.0
+    container_name: formiq-mongo
+    restart: unless-stopped 
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - formiq-net
+
+  redis:
+    image: redis:7.0
+    container_name: formiq-redis
+    restart: unless-stopped
+    volumes:
+      - redis-data:/data
+    networks:
+      - formiq-net
+
+  workers:
+    build:
+      context: ./workers
+    container_name: formiq-workers
+    restart: unless-stopped
+    env_file:
+      - ./workers/.env
+    depends_on:
+      - redis
+    networks:
+      - formiq-net
+
+  server:
+    build:
+      context: ./server
+    container_name: formiq-server
+    restart: unless-stopped
+    env_file:
+      - ./server/.env
+    environment:
+      - VIRTUAL_HOST=api.formiq.devxsaurav.in
+      - LETSENCRYPT_HOST=api.formiq.devxsaurav.in
+      - LETSENCRYPT_EMAIL=formiq@devxsaurav.in
+      - VIRTUAL_PORT=8000
+    depends_on:
+      - mongodb
+      - redis
+      - workers
+    expose:
+      - "8000"
+    networks:
+      - formiq-net
+
+  client:
+    build:
+      context: ./client
+    container_name: formiq-client
+    restart: unless-stopped
+    env_file:
+      - ./client/.env
+    environment:
+      - VIRTUAL_HOST=formiq.devxsaurav.in
+      - LETSENCRYPT_HOST=formiq.devxsaurav.in
+      - LETSENCRYPT_EMAIL=formiq@devxsaurav.in
+    depends_on:
+      - server
+    expose:
+      - "3000"
+    networks:
+      - formiq-net
+
+volumes:
+  mongo-data:
+  redis-data:
+
+networks:
+  formiq-net:
+    driver: bridge

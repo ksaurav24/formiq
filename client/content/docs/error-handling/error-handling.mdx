@@ -1,0 +1,556 @@
+---
+title: Error Handling
+description: Handle errors gracefully in FormIQ SDK with comprehensive error management strategies
+---
+
+import { Tabs, Tab } from 'fumadocs-ui/components/tabs';
+import { Callout } from 'fumadocs-ui/components/callout';
+import { Card, Cards } from 'fumadocs-ui/components/card';
+ 
+
+## Error Structure
+
+When a submission fails, FormIQ throws an error. The error object follows this structure:
+
+```ts lineNumbers
+interface FormiqError {
+  status: string;      // "error"
+  message: string;     // Human-readable error message
+  code: number;        // HTTP status code
+  timestamp: string;   // ISO 8601 timestamp
+  details?: any;       // Optional additional error details
+}
+```
+
+---
+
+## Basic Error Handling
+
+Always wrap `submitForm()` calls in try-catch blocks:
+
+```ts lineNumbers
+import Formiq from 'formiq-sdk';
+
+const formiq = new Formiq('API_KEY', 'PROJECT_ID');
+
+try {
+  const response = await formiq.submitForm({
+    name: 'John Doe',
+    email: 'john@example.com'
+  });
+  
+  console.log('Success:', response.message);
+  
+} catch (error) {
+  console.error('Error:', error.message);
+}
+```
+
+---
+
+## Common Error Types
+
+### 401 Unauthorized
+
+Invalid API key or project ID.
+
+```ts lineNumbers
+try {
+  await formiq.submitForm(data);
+} catch (error) {
+  if (error.message.includes('Unauthorized')) {
+    console.error('Invalid credentials. Check your API key and Project ID.');
+  }
+}
+```
+
+**Solution:**
+- Verify your API key and Project ID from the dashboard
+- Ensure environment variables are correctly set
+- Check that the project is active
+
+### 400 Bad Request
+
+Invalid data format or missing required fields.
+
+```ts lineNumbers
+try {
+  await formiq.submitForm(data);
+} catch (error) {
+  if (error.message.includes('Bad Request')) {
+    console.error('Invalid data format:', error.details);
+  }
+}
+```
+
+**Solution:**
+- Validate data before submission
+- Ensure all required fields are included
+- Check data types match expected formats
+
+### 404 Not Found
+
+Project does not exist or has been deleted.
+
+```ts lineNumbers
+try {
+  await formiq.submitForm(data);
+} catch (error) {
+  if (error.message.includes('Not Found')) {
+    console.error('Project not found. Verify your Project ID.');
+  }
+}
+```
+
+**Solution:**
+- Double-check your Project ID
+- Ensure the project exists in your dashboard
+- Verify you're using the correct environment (dev/prod)
+
+### 429 Rate Limited
+
+Too many requests in a short period.
+
+```ts lineNumbers
+try {
+  await formiq.submitForm(data);
+} catch (error) {
+  if (error.message.includes('Rate limit') || error.code === 429) {
+    console.error('Rate limit exceeded. Please wait before retrying.');
+  }
+}
+```
+
+**Solution:**
+- Implement rate limiting on your frontend
+- Add delays between submissions
+- Upgrade your plan for higher limits
+
+### Network Errors
+
+Connection issues or timeout.
+
+```ts lineNumbers
+try {
+  await formiq.submitForm(data);
+} catch (error) {
+  if (error.message.includes('fetch') || error.message.includes('network')) {
+    console.error('Network error. Please check your connection.');
+  }
+}
+```
+
+**Solution:**
+- Check internet connectivity
+- Verify API endpoint is accessible
+- Implement retry logic with exponential backoff
+
+---
+
+## Error Handling Patterns
+
+### Comprehensive Error Handler
+
+```ts lineNumbers
+import Formiq from 'formiq-sdk';
+
+const formiq = new Formiq('API_KEY', 'PROJECT_ID');
+
+async function handleFormSubmission(data) {
+  try {
+    const response = await formiq.submitForm(data);
+    return {
+      success: true,
+      data: response.data,
+      message: 'Form submitted successfully!'
+    };
+    
+  } catch (error) {
+    console.error('Submission error:', error);
+    
+    // Categorize errors
+    let userMessage = 'An error occurred. Please try again.';
+    
+    if (error.message.includes('Unauthorized')) {
+      userMessage = 'Authentication failed. Please contact support.';
+    } else if (error.message.includes('Bad Request')) {
+      userMessage = 'Please check your form data and try again.';
+    } else if (error.message.includes('Rate limit')) {
+      userMessage = 'Too many requests. Please wait a moment and try again.';
+    } else if (error.message.includes('Not Found')) {
+      userMessage = 'Service configuration error. Please contact support.';
+    } else if (error.message.includes('network')) {
+      userMessage = 'Network error. Please check your connection.';
+    }
+    
+    return {
+      success: false,
+      error: userMessage,
+      code: error.code || 500
+    };
+  }
+}
+
+// Usage
+const result = await handleFormSubmission({ email: 'test@example.com' });
+if (result.success) {
+  console.log('✓', result.message);
+} else {
+  console.error('✗', result.error);
+}
+```
+
+### With Retry Logic
+
+```ts lineNumbers
+async function submitWithRetry(formiq, data, maxRetries = 3) {
+  let lastError;
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const response = await formiq.submitForm(data);
+      return { success: true, response };
+      
+    } catch (error) {
+      lastError = error;
+      console.log(`Attempt ${attempt} failed:`, error.message);
+      
+      // Don't retry on client errors (4xx)
+      if (error.code >= 400 && error.code < 500) {
+        break;
+      }
+      
+      // Wait before retrying (exponential backoff)
+      if (attempt < maxRetries) {
+        const delay = Math.pow(2, attempt) * 1000; // 2s, 4s, 8s
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+  }
+  
+  return { success: false, error: lastError };
+}
+
+// Usage
+const result = await submitWithRetry(formiq, { email: 'user@example.com' });
+if (result.success) {
+  console.log('Submitted:', result.response);
+} else {
+  console.error('Failed after retries:', result.error);
+}
+```
+
+---
+
+## React Error Handling
+
+### Using useFormiq Hook
+
+```tsx lineNumbers
+import { useFormiq } from 'formiq-sdk/react';
+import Formiq from 'formiq-sdk';
+import { useState } from 'react';
+
+const formiq = new Formiq('API_KEY', 'PROJECT_ID');
+
+function ContactForm() {
+  const { submit, loading, error } = useFormiq(formiq);
+  const [formData, setFormData] = useState({ name: '', email: '' });
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    const response = await submit(formData);
+    
+    if (response) {
+      alert('Form submitted successfully!');
+      setFormData({ name: '', email: '' });
+    }
+    // Error is automatically captured in the `error` state
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <input
+        value={formData.name}
+        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+        disabled={loading}
+      />
+      <input
+        type="email"
+        value={formData.email}
+        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+        disabled={loading}
+      />
+      
+      <button disabled={loading}>
+        {loading ? 'Submitting...' : 'Submit'}
+      </button>
+      
+      {error && (
+        <div className="error-message">
+          <strong>Error:</strong> {error.message}
+        </div>
+      )}
+    </form>
+  );
+}
+```
+
+### Custom Error Display
+
+```tsx lineNumbers
+function ErrorDisplay({ error }: { error: FormiqError | null }) {
+  if (!error) return null;
+  
+  const getErrorIcon = (code: number) => {
+    if (code === 401) return '🔒';
+    if (code === 404) return '🔍';
+    if (code === 429) return '⏱️';
+    return '⚠️';
+  };
+  
+  const getErrorColor = (code: number) => {
+    if (code === 429) return 'warning';
+    if (code >= 500) return 'error';
+    return 'info';
+  };
+  
+  return (
+    <div className={`alert alert-${getErrorColor(error.code)}`}>
+      <span className="icon">{getErrorIcon(error.code)}</span>
+      <div>
+        <strong>Error {error.code}</strong>
+        <p>{error.message}</p>
+        {error.details && (
+          <pre>{JSON.stringify(error.details, null, 2)}</pre>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Usage
+<ErrorDisplay error={error} />
+```
+
+---
+
+## TypeScript Error Handling
+
+```ts lineNumbers
+import Formiq from 'formiq-sdk';
+import type { FormiqResponse, FormiqError } from 'formiq-sdk';
+
+const formiq = new Formiq('API_KEY', 'PROJECT_ID');
+
+async function typedSubmission(data: Record<string, any>) {
+  try {
+    const response: FormiqResponse = await formiq.submitForm(data);
+    
+    console.log('Status:', response.status);
+    console.log('Data:', response.data.fields);
+    
+    return response;
+    
+  } catch (error) {
+    const formiqError = error as FormiqError;
+    
+    console.error('Error Code:', formiqError.code);
+    console.error('Error Message:', formiqError.message);
+    
+    if (formiqError.details) {
+      console.error('Details:', formiqError.details);
+    }
+    
+    throw formiqError;
+  }
+}
+```
+
+---
+
+## Validation Before Submission
+
+Prevent errors by validating data before submission:
+
+```ts lineNumbers
+function validateFormData(data) {
+  const errors = [];
+  
+  // Email validation
+  if (!data.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
+    errors.push('Invalid email address');
+  }
+  
+  // Name validation
+  if (!data.name || data.name.trim().length < 2) {
+    errors.push('Name must be at least 2 characters');
+  }
+  
+  // Message validation
+  if (data.message && data.message.length > 5000) {
+    errors.push('Message is too long (max 5000 characters)');
+  }
+  
+  return errors;
+}
+
+async function safeSubmit(formiq, data) {
+  // Validate first
+  const validationErrors = validateFormData(data);
+  
+  if (validationErrors.length > 0) {
+    return {
+      success: false,
+      errors: validationErrors
+    };
+  }
+  
+  // Then submit
+  try {
+    const response = await formiq.submitForm(data);
+    return { success: true, response };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+}
+```
+
+---
+
+## Error Logging
+
+Log errors for debugging and monitoring:
+
+```ts lineNumbers
+function logError(error, context = {}) {
+  const errorLog = {
+    timestamp: new Date().toISOString(),
+    message: error.message,
+    code: error.code,
+    context,
+    userAgent: navigator.userAgent,
+    url: window.location.href
+  };
+  
+  // Log to console in development
+  if (process.env.NODE_ENV === 'development') {
+    console.error('FormIQ Error:', errorLog);
+  }
+  
+  // Send to monitoring service in production
+  if (process.env.NODE_ENV === 'production') {
+    // Example: Send to your logging service
+    // logToService(errorLog);
+  }
+  
+  return errorLog;
+}
+
+// Usage
+try {
+  await formiq.submitForm(data);
+} catch (error) {
+  logError(error, { 
+    formType: 'contact',
+    userId: currentUser.id 
+  });
+}
+```
+
+---
+
+## Best Practices
+
+<Callout type="info">
+**Always handle errors gracefully** to provide a good user experience even when things go wrong.
+</Callout>
+
+### 1. User-Friendly Messages
+
+```ts lineNumbers
+// ❌ Bad - Technical error shown to user
+alert(error.message);
+
+// ✅ Good - User-friendly message
+const friendlyMessage = error.code === 401 
+  ? 'Please contact support for assistance.'
+  : 'Something went wrong. Please try again later.';
+alert(friendlyMessage);
+```
+
+### 2. Prevent Multiple Submissions
+
+```ts lineNumbers
+let isSubmitting = false;
+
+async function handleSubmit(data) {
+  if (isSubmitting) return;
+  
+  isSubmitting = true;
+  try {
+    await formiq.submitForm(data);
+  } catch (error) {
+    console.error(error);
+  } finally {
+    isSubmitting = false;
+  }
+}
+```
+
+### 3. Provide Feedback
+
+```ts lineNumbers
+async function submitWithFeedback(data) {
+  const loadingToast = showToast('Submitting...');
+  
+  try {
+    const response = await formiq.submitForm(data);
+    hideToast(loadingToast);
+    showToast('✓ Success!', 'success');
+    return response;
+  } catch (error) {
+    hideToast(loadingToast);
+    showToast('✗ ' + error.message, 'error');
+    throw error;
+  }
+}
+```
+
+### 4. Handle Network Issues
+
+```ts lineNumbers
+async function submitWithNetworkCheck(data) {
+  // Check online status
+  if (!navigator.onLine) {
+    throw new Error('No internet connection. Please check your network.');
+  }
+  
+  try {
+    return await formiq.submitForm(data);
+  } catch (error) {
+    if (error.message.includes('fetch')) {
+      throw new Error('Network error. Please try again.');
+    }
+    throw error;
+  }
+}
+```
+
+---
+
+## Next Steps
+
+<Cards>
+  <Card 
+    title="Core API Reference" 
+    href="/docs/core/api-reference"
+    description="Complete API documentation"
+  />
+  <Card 
+    title="React Integration" 
+    href="/docs/frameworks-and-tools/react"
+    description="Error handling with React hooks"
+  /> 
+</Cards> 

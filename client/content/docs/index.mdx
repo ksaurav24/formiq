@@ -1,0 +1,200 @@
+---
+title: Quick Start
+description: Get started with FormIQ SDK in under 5 minutes
+---
+
+import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
+ 
+
+## Installation
+
+```npm
+npm install formiq-sdk
+```
+
+## Get Your Credentials
+
+Visit the [FormIQ Dashboard](https://formiq.devxsaurav.in/dashboard) and:
+
+1. Create a new project
+2. Copy your **API Key**
+3. Copy your **Project ID**
+
+## Basic Usage
+
+```js lineNumbers
+import Formiq from 'formiq-sdk';
+
+// Initialize the client
+const formiq = new Formiq('YOUR_API_KEY', 'YOUR_PROJECT_ID');
+
+// Submit form data
+const response = await formiq.submitForm({
+  name: 'John Doe',
+  email: 'john@example.com',
+  message: 'Hello from FormIQ!'
+});
+
+console.log('Form submitted:', response);
+```
+
+## HTML Form Example
+
+```html lineNumbers
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Contact Form</title>
+  <style>
+    form {
+      max-width: 500px;
+      margin: 50px auto;
+      padding: 20px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+    }
+    
+    input, textarea {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+    
+    button {
+      background-color: #007bff;
+      color: white;
+      padding: 12px 24px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    
+    button:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
+    
+    .message {
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 4px;
+    }
+    
+    .success {
+      background-color: #d4edda;
+      color: #155724;
+    }
+    
+    .error {
+      background-color: #f8d7da;
+      color: #721c24;
+    }
+  </style>
+</head>
+<body>
+  <form id="contactForm">
+    <h2>Contact Us</h2>
+    
+    <input 
+      type="text" 
+      name="name" 
+      placeholder="Your Name" 
+      required 
+    />
+    
+    <input 
+      type="email" 
+      name="email" 
+      placeholder="Your Email" 
+      required 
+    />
+    
+    <textarea 
+      name="message" 
+      placeholder="Your Message" 
+      rows="5" 
+      required
+    ></textarea>
+    
+    <button type="submit" id="submitBtn">Submit</button>
+    
+    <div id="messageDiv"></div>
+  </form>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
+```
+
+```js lineNumbers
+import Formiq from 'formiq-sdk';
+
+// Initialize FormIQ client
+const formiq = new Formiq('YOUR_API_KEY', 'YOUR_PROJECT_ID');
+
+// Get form elements
+const form = document.getElementById('contactForm');
+const submitBtn = document.getElementById('submitBtn');
+const messageDiv = document.getElementById('messageDiv');
+
+// Handle form submission
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  
+  // Disable button and show loading state
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Submitting...';
+  messageDiv.innerHTML = '';
+  
+  // Get form data
+  const formData = new FormData(form);
+  const data = Object.fromEntries(formData);
+  
+  try {
+    // Submit to FormIQ
+    const response = await formiq.submitForm(data);
+    
+    // Show success message
+    messageDiv.innerHTML = '<div class="message success">Form submitted successfully!</div>';
+    form.reset();
+    
+    console.log('Success:', response);
+  } catch (error) {
+    // Show error message
+    messageDiv.innerHTML = `<div class="message error">Error: ${error.message}</div>`;
+    
+    console.error('Error:', error);
+  } finally {
+    // Re-enable button
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Submit';
+  }
+});
+```
+
+## Environment Variables
+
+For production, store your credentials securely:
+
+```js lineNumbers
+export const FORMIQ_CONFIG = {
+  apiKey: process.env.FORMIQ_API_KEY || 'YOUR_API_KEY',
+  projectId: process.env.FORMIQ_PROJECT_ID || 'YOUR_PROJECT_ID'
+};
+```
+
+```js lineNumbers
+import Formiq from 'formiq-sdk';
+import { FORMIQ_CONFIG } from './config.js';
+
+const formiq = new Formiq(
+  FORMIQ_CONFIG.apiKey,
+  FORMIQ_CONFIG.projectId
+);
+```
+ 

@@ -1,0 +1,36 @@
+import { defineConfig } from "tsup";
+
+export default defineConfig([
+  // Core SDK build
+  {
+    entry: ["src/index.ts"],
+    format: ["cjs", "esm"],
+    dts: true,
+    sourcemap: true,
+    clean: true,
+    outDir: "dist",
+    minify: true
+  },
+  // React helper build
+  {
+    entry: ["src/react/index.ts"],
+    format: ["cjs", "esm"],
+    dts: true,
+    sourcemap: true,
+    clean: false, // don’t wipe dist since core is already built
+    outDir: "dist/react",
+    minify: true,
+    external: ["react"] // don’t bundle React
+  },
+  // Next.js helper build
+  {
+    entry: ["src/next/index.ts"],
+    format: ["cjs", "esm"],
+    dts: true,
+    sourcemap: true,
+    clean: false,
+    outDir: "dist/next",
+    minify: true,
+    external: ["next"] // don’t bundle Next
+  }
+]);

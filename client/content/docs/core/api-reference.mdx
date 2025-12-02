@@ -1,0 +1,239 @@
+---
+title: Core API Reference
+description: Complete API documentation for FormIQ SDK core methods and classes
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+import { Card, Cards } from 'fumadocs-ui/components/card';
+ 
+## Formiq Class
+
+The main class for interacting with FormIQ services.
+
+### Constructor
+
+Initialize a new FormIQ client instance.
+
+```js lineNumbers
+new Formiq(apiKey, projectId)
+```
+
+**Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `apiKey` | `string` | Yes | Your FormIQ API key from the dashboard |
+| `projectId` | `string` | Yes | Your project identifier |
+
+**Example:**
+
+```js lineNumbers
+import Formiq from 'formiq-sdk';
+
+const FORMIQ_PUBLIC_KEY = "-----BEGIN PUBLIC KEY-----MIIBIjANBgkqhkiG9w0BAQEF.....fwU3kdmcDoXfnvCrohVP-----END PUBLIC KEY-----"
+
+const FORMIQ_PROJECT_ID = "0861gg-portfolio-1760687211085"
+
+const formiq = new Formiq(FORMIQ_PUBLIC_KEY, FORMIQ_PROJECT_ID);
+```
+
+<Callout type="info">
+Get your API key and Project ID from the [FormIQ Dashboard](https://formiq.devxsaurav.in/dashboard).
+</Callout>
+
+---
+
+## Methods
+
+### submitForm()
+
+Submit form data to your FormIQ project with optional metadata.
+
+```js lineNumbers
+formiq.submitForm(data, options)
+```
+
+**Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `data` | `Record<string, any>` | Yes | Form fields as key-value pairs |
+| `options` | `object` | No | Additional submission metadata |
+| `options.ipAddress` | `string` | No | Client IP address for tracking |
+| `options.userAgent` | `string` | No | User agent string |
+| `options.origin` | `string` | No | Request origin URL |
+
+**Returns:**
+
+`Promise<FormiqResponse>` - Resolves with the API response containing submission details.
+
+**Throws:**
+
+`Error` - If the submission fails or network error occurs.
+
+**Examples:**
+
+```js lineNumbers
+// Basic submission
+const response = await formiq.submitForm({
+  name: 'Jane Smith',
+  email: 'jane@example.com',
+  message: 'Hello!'
+});
+```
+
+```js lineNumbers
+// With options
+const response = await formiq.submitForm(
+  {
+    name: 'John Doe',
+    email: 'john@example.com'
+  },
+  {
+    ipAddress: '192.168.1.1',
+    userAgent: navigator.userAgent,
+    origin: window.location.origin
+  }
+);
+```
+
+```js lineNumbers
+// From HTML form
+const form = document.getElementById('myForm');
+const formData = new FormData(form);
+const data = Object.fromEntries(formData);
+
+const response = await formiq.submitForm(data, {
+  userAgent: navigator.userAgent
+});
+```
+
+---
+
+## Properties
+
+### apiKey
+
+```js lineNumbers
+formiq.apiKey
+```
+
+**Type:** `string`
+
+Your FormIQ API key used for authentication.
+
+### projectId
+
+```js lineNumbers
+formiq.projectId
+```
+
+**Type:** `string`
+
+Your project identifier that determines where submissions are stored.
+
+---
+
+## Response Format
+
+Successful submissions return a response object:
+
+```json lineNumbers
+{
+  status: "success",
+  message: "Submission created",
+  data: {
+    fields: {
+      // Your submitted fields
+      name: "John Doe",
+      email: "john@example.com"
+    },
+    createdAt: "2025-10-18T05:31:06.401Z",
+    updatedAt: "2025-10-18T05:31:06.401Z"
+  },
+  code: 201,
+  timestamp: "2025-10-18T05:31:06.908Z"
+}
+```
+
+**Response Fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `status` | `string` | Status of the submission (`"success"`) |
+| `message` | `string` | Human-readable message |
+| `data` | `object` | Submission details |
+| `data.fields` | `object` | The exact fields you submitted |
+| `data.createdAt` | `string` | ISO 8601 timestamp when created |
+| `data.updatedAt` | `string` | ISO 8601 timestamp when updated |
+| `code` | `number` | HTTP status code (201 for success) |
+| `timestamp` | `string` | ISO 8601 timestamp of response |
+
+**Accessing Response:**
+
+```js lineNumbers
+const response = await formiq.submitForm({
+  name: 'John Doe',
+  email: 'john@example.com'
+});
+
+console.log(response.status);              // "success"
+console.log(response.code);                // 201
+console.log(response.data.fields.name);    // "John Doe"
+console.log(response.data.createdAt);      // "2025-10-18T05:31:06.401Z"
+```
+
+---
+
+## Type Definitions
+
+FormIQ provides full TypeScript support:
+
+```ts lineNumbers
+interface SubmitOptions {
+  ipAddress?: string;
+  userAgent?: string;
+  origin?: string;
+}
+
+interface FormiqSubmissionData {
+  fields: Record<string, any>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface FormiqResponse {
+  status: string;
+  message: string;
+  data: FormiqSubmissionData;
+  code: number;
+  timestamp: string;
+}
+
+interface FormiqError {
+  status: string;
+  message: string;
+  code: number;
+  timestamp: string;
+  data?: any;
+  errors?: string[];
+}
+ 
+```
+
+---
+
+## Next Steps
+
+<Cards>
+  <Card 
+    title="React Integration" 
+    href="/docs/frameworks-and-tools/react"
+    description="Use the useFormiq hook for React applications"
+  /> 
+  <Card 
+    title="Error Handling" 
+    href="/docs/error-handling/error-handling"
+    description="Comprehensive error handling guide"
+  /> 
+</Cards> 

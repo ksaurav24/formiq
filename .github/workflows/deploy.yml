@@ -1,0 +1,55 @@
+name: Deploy to Azure VPS
+
+on:
+  push:
+    branches:
+      - main  # deploy only when main branch is updated
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, formiq-azure-runner]  # self-hosted runner label
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # full history for accurate git diff
+
+      - name: Set Node.js (if needed for build)
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+
+      - name: Deploy containers
+        run: |
+          set -e
+          cd ~/formiq || exit 1
+
+          echo ">>> Pulling latest code"
+          git fetch origin main
+          git reset --hard origin/main
+
+          echo ">>> Detecting changed directories"
+          CHANGED_DIRS=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} | awk -F/ '{print $1}' | sort -u)
+          echo "Changed directories: $CHANGED_DIRS"
+
+          if [ -z "$CHANGED_DIRS" ]; then
+            echo "No changes detected. Exiting."
+            exit 0
+          fi
+
+          echo ">>> Building and restarting changed containers"
+          for dir in $CHANGED_DIRS; do
+            case "$dir" in
+              client|server|workers)
+                echo "Rebuilding service: $dir"
+                docker compose up -d --build $dir
+                ;;
+              *)
+                echo "No Docker service mapped for: $dir"
+                ;;
+            esac
+          done
+
+          echo ">>> Pruning unused Docker images"
+          docker image prune -f

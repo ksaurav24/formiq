@@ -1,0 +1,13 @@
+# Ignore src directory as only built files are needed
+src/
+# Ignore test files
+test/
+tests/
+__tests__/
+# Ignore configuration files
+*.config.js
+*.config.json
+
+# Ignore documentation files
+docs/
+*.md

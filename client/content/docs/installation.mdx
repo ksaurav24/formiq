@@ -1,0 +1,214 @@
+---
+title: Installation
+description: Install FormIQ SDK and set up your first client
+---
+
+import { Tabs, Tab } from 'fumadocs-ui/components/tabs';
+import { Callout } from 'fumadocs-ui/components/callout';
+import { Steps, Step } from 'fumadocs-ui/components/steps';
+
+# Installation
+
+Get FormIQ SDK installed and create your first client instance.
+
+## Install Package
+
+```npm
+npm install formiq-sdk
+```
+
+<Callout type="info">
+FormIQ SDK works with Node.js 16+ and all modern browsers.
+</Callout>
+
+---
+
+## Get Your Credentials
+
+<Steps>
+  <Step>
+    Visit the [FormIQ Dashboard](https://formiq.devxsaurav.in/dashboard)
+  </Step>
+  <Step>
+    Create a new project or select an existing one
+  </Step>
+  <Step>
+    Copy your **API Key** and **Project ID** from the project settings
+  </Step>
+</Steps>
+
+---
+
+## Create FormIQ Instance
+
+### Basic Setup
+
+```ts lineNumbers
+import Formiq from 'formiq-sdk';
+
+const formiq = new Formiq('YOUR_API_KEY', 'YOUR_PROJECT_ID');
+```
+
+### With Environment Variables
+
+**Recommended for production:**
+
+```ts lineNumbers
+import Formiq from 'formiq-sdk';
+
+const formiq = new Formiq(
+  process.env.FORMIQ_API_KEY,
+  process.env.FORMIQ_PROJECT_ID
+);
+```
+
+### Environment Files
+
+<Tabs items={['Next.js', 'React (Vite)', 'Node.js']}>
+  <Tab value="Next.js">
+
+```plain lineNumbers
+NEXT_PUBLIC_FORMIQ_API_KEY=your_api_key_here
+NEXT_PUBLIC_FORMIQ_PROJECT_ID=your_project_id_here
+```
+
+```ts lineNumbers
+import Formiq from 'formiq-sdk';
+
+const formiq = new Formiq(
+  process.env.NEXT_PUBLIC_FORMIQ_API_KEY!,
+  process.env.NEXT_PUBLIC_FORMIQ_PROJECT_ID!
+);
+```
+  </Tab>
+  <Tab value="React (Vite)">
+```plain lineNumbers
+VITE_FORMIQ_API_KEY=your_api_key_here
+VITE_FORMIQ_PROJECT_ID=your_project_id_here
+```
+
+```ts lineNumbers
+import Formiq from 'formiq-sdk';
+
+const formiq = new Formiq(
+  import.meta.env.VITE_FORMIQ_API_KEY,
+  import.meta.env.VITE_FORMIQ_PROJECT_ID
+);
+```
+  </Tab>
+  <Tab value="Node.js">
+```plain lineNumbers
+FORMIQ_API_KEY=your_api_key_here
+FORMIQ_PROJECT_ID=your_project_id_here
+```
+
+```ts lineNumbers
+import Formiq from 'formiq-sdk';
+import 'dotenv/config';
+
+const formiq = new Formiq(
+  process.env.FORMIQ_API_KEY,
+  process.env.FORMIQ_PROJECT_ID
+);
+```
+  </Tab>
+</Tabs>
+
+<Callout type="warn">
+Never commit your `.env` files to version control. Always add them to `.gitignore`.
+</Callout>
+
+---
+
+## TypeScript Setup
+
+FormIQ includes TypeScript definitions out of the box:
+
+```ts lineNumbers
+import Formiq from 'formiq-sdk';
+
+const formiq: Formiq = new Formiq(
+  process.env.FORMIQ_API_KEY!,
+  process.env.FORMIQ_PROJECT_ID!
+);
+
+// Full type inference available
+const response = await formiq.submitForm({
+  name: 'John Doe',
+  email: 'john@example.com'
+});
+```
+
+---
+
+## Verify Installation
+
+Test your setup with a simple submission:
+
+```ts lineNumbers
+import Formiq from 'formiq-sdk';
+
+const formiq = new Formiq('YOUR_API_KEY', 'YOUR_PROJECT_ID');
+
+// Test submission
+async function testSetup() {
+  try {
+    const response = await formiq.submitForm({
+      test: 'Hello FormIQ!',
+      timestamp: new Date().toISOString()
+    });
+    
+    console.log('✓ Setup successful!');
+    console.log('Response:', response);
+  } catch (error) {
+    console.error('✗ Setup failed:', error.message);
+  }
+}
+
+testSetup();
+```
+
+---
+
+## Multiple Projects
+
+You can create multiple instances for different projects:
+
+```ts lineNumbers
+import Formiq from 'formiq-sdk';
+
+// Contact form
+const contactFormiq = new Formiq(
+  process.env.CONTACT_API_KEY,
+  process.env.CONTACT_PROJECT_ID
+);
+
+// Newsletter
+const newsletterFormiq = new Formiq(
+  process.env.NEWSLETTER_API_KEY,
+  process.env.NEWSLETTER_PROJECT_ID
+);
+
+// Use them separately
+await contactFormiq.submitForm({ name: 'John', email: 'john@example.com' });
+await newsletterFormiq.submitForm({ email: 'subscriber@example.com' });
+```
+
+---
+
+## Next Steps
+
+Now that you have FormIQ installed and configured, explore how to use it:
+
+<Cards> 
+  <Card 
+    title="Core API Reference" 
+    href="/docs/core/api-reference"
+    description="Complete API documentation"
+  />
+  <Card 
+    title="React Integration" 
+    href="/docs/frameworks-and-tools/react"
+    description="Use with React hooks"
+  /> 
+</Cards> 
